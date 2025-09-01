@@ -2,6 +2,8 @@
 
 ### Development:
 
+The commands are for windows docker.
+
 #### Build:
 
 ```sh
