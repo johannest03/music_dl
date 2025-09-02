@@ -1,5 +1,5 @@
 from mido import MidiFile
-from params import CONTROL_BINS_CONTROL_DISTANCE, CONTROL_BINS_VALUE_DISTANCE, TIME_RESOLUTION, TEMPO_BINS_DISTANCE
+from params import CONTROL_BINS_CONTROL_DISTANCE, CONTROL_BINS_VALUE_DISTANCE, TIME_BINS_DISTANCE, TIME_RESOLUTION, TEMPO_BINS_DISTANCE
 from .midi_token_id_conversion import MidiTokenIDConversion
 
 class MidiEncoder:
@@ -32,7 +32,7 @@ class MidiEncoder:
                                 time_shifts += TIME_RESOLUTION
                     if msg.type == "note_on":
                         tokens.append(f"VELOCITY_{msg.velocity}")
-                        tokens.append(f"TIME_{msg.time - time_shifts}")
+                        tokens.append(f"TIME_{int(round((msg.time - time_shifts) / TIME_BINS_DISTANCE) * TIME_BINS_DISTANCE)}")
                         time_shifts = 0
                         tokens.append(f"NOTE_ON_{msg.note}")
                     elif msg.type == "note_off":
@@ -40,12 +40,12 @@ class MidiEncoder:
                     elif msg.type == "program_change":
                         tokens.append(f"PROGRAM_{msg.program}")
                     elif msg.type == "control_change":
-                        tokens.append(f"TIME_{msg.time - time_shifts}")
-                        tokens.append(f"CONTROL_{round(msg.control / CONTROL_BINS_CONTROL_DISTANCE)}_{round(msg.value / CONTROL_BINS_VALUE_DISTANCE)}")
+                        tokens.append(f"TIME_{(msg.time - time_shifts)}")
+                        tokens.append(f"CONTROL_{int(round(msg.control / CONTROL_BINS_CONTROL_DISTANCE) * CONTROL_BINS_CONTROL_DISTANCE)}_{int(round(msg.value / CONTROL_BINS_VALUE_DISTANCE) * CONTROL_BINS_VALUE_DISTANCE )}")
                         time_shifts = 0
                     elif msg.type == "set_tempo":
                         tempo = msg.tempo
-                        bpm = int(60000000 / tempo / TEMPO_BINS_DISTANCE)
+                        bpm = int(round(60000000 / tempo / TEMPO_BINS_DISTANCE) * TEMPO_BINS_DISTANCE)
                         tokens.append(f"TEMPO_{bpm}")
                     else : 
                         pass
