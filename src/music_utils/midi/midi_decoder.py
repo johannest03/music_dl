@@ -1,6 +1,6 @@
 from mido import MidiFile, MidiTrack, Message, MetaMessage, bpm2tempo
 from .midi_token_id_conversion import MidiTokenIDConversion
-from params import TEMPO_BINS_DISTANCE, CONTROL_BINS_CONTROL_DISTANCE, CONTROL_BINS_VALUE_DISTANCE
+from params import TEMPO_BINS_DISTANCE  
 
 class MidiDecoder:
     def __init__(self, ticks_per_beat=480):
@@ -52,7 +52,7 @@ class MidiDecoder:
                 delta_ticks += time
             elif token.startswith("CONTROL_"):
                 control, value = map(int, token.split("_")[1:])
-                track.append(Message("control_change", control=control * CONTROL_BINS_CONTROL_DISTANCE, value=value * CONTROL_BINS_VALUE_DISTANCE, time=delta_ticks))
+                track.append(Message("control_change", control=control, value=value, time=delta_ticks))
                 delta_ticks = 0
             else:
                 print(f"Unknown token: {token}")

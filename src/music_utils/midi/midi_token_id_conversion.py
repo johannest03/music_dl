@@ -1,4 +1,4 @@
-from params import TIME_RESOLUTION, TEMPO_BINS_DISTANCE, TIMING_BINS_DISTANCE, MAX_TEMPO, CONTROL_BINS_VALUE_DISTANCE, CONTROL_BINS_CONTROL_DISTANCE
+from params import TIME_RESOLUTION, TEMPO_BINS_DISTANCE, TIME_BINS_DISTANCE, MAX_TEMPO, CONTROL_BINS_VALUE_DISTANCE, CONTROL_BINS_CONTROL_DISTANCE
 
 class MidiTokenIDConversion:
     def __init__(self):
@@ -19,7 +19,7 @@ class MidiTokenIDConversion:
         for v in range(128):
             self._add_token(f"VELOCITY_{v}")
         
-        for t in range(0, TIME_RESOLUTION, TIMING_BINS_DISTANCE):
+        for t in range(0, TIME_RESOLUTION, TIME_BINS_DISTANCE):
             self._add_token(f"TIME_{t}")
 
         # Program changes
@@ -43,11 +43,10 @@ class MidiTokenIDConversion:
         self.id_to_token.append(token)
         
     def tokens_to_ids(self, tokens):
-        ids = [self.token_to_id[t] for t in tokens if t in self.token_to_id]
+        ids = [int(self.token_to_id[t]) for t in tokens if t in self.token_to_id]
 
         for t in tokens:
-            if t not in self.token_to_id:
-                print(f"Warning: Token '{t}' not recognized.")
+            assert t not in self.token_to_id, f"Token '{t}' not recognized." 
 
         assert len(ids) == len(tokens), "Some tokens were not recognized."
         return ids

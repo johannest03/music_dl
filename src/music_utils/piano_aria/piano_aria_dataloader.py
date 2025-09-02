@@ -26,6 +26,7 @@ class PianoAriaDataloader:
     def _pad(self, token_ids, length):
         assert len(token_ids) <= length, "Token IDs length exceeds sequence length"
         padded = jnp.zeros(length, dtype=jnp.int32)
+        token_ids = jnp.array(token_ids, dtype=jnp.int32)
         padded = padded.at[:len(token_ids)].set(token_ids)
         return padded
 
@@ -55,7 +56,7 @@ class PianoAriaDataloader:
 
             if batch_shuffle:
                 # Shuffle within the batch
-                perm = jnp.array(jax.random.permutation(key, len(batch_tokens)))
+                perm = jnp.array(jax.random.permutation(key, len(batch_tokens)), dtype=jnp.int32)
                 batch_tokens = [batch_tokens[i] for i in perm]
                 file_names = [file_names[i] for i in perm]
 

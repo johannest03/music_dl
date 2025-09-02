@@ -1,4 +1,4 @@
-# music_dl
+# Music Transformer
 
 ### Development:
 
