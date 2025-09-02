@@ -12,10 +12,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
-RUN pip install --no-cache-dir --upgrade "jax[cuda12]" flax optax 
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 WORKDIR /workspace
 
-COPY ./src /workspace
+COPY ./src /workspace 
+COPY ./datasets /datasets
 
 CMD ["python3", "train.py"]
