@@ -3,3 +3,4 @@ flax
 optax 
 mido
 pytest
+tqdm

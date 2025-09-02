@@ -7,7 +7,7 @@ class MidiTokenIDConversion:
         self.id_to_token = []
 
         # Special tokens
-        for t in ["SONG_START", "SONG_END", "TRACK_START", "TRACK_END"]:
+        for t in ["SONG_END", "SONG_START", "TRACK_START", "TRACK_END"]:
             self._add_token(t)
 
         # Note events
