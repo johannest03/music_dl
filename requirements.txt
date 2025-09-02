@@ -2,3 +2,4 @@ jax[cuda12]
 flax 
 optax 
 mido
+pytest

@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 WORKDIR /workspace
 
-COPY ./src /workspace
+COPY ./src /workspace 
+COPY ./datasets /datasets
 
 CMD ["python3", "train.py"]
