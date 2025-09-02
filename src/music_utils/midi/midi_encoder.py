@@ -26,10 +26,10 @@ class MidiEncoder:
                     # Convert delta ticks -> ms
                     if msg.time > 0:
                         n_steps = int(msg.time // TIME_RESOLUTION)
-                        for _ in range(n_steps):
-                            tokens.append(f"TIME_SHIFT_{TIME_RESOLUTION}")
-                            time_shifts += TIME_RESOLUTION 
-
+                        if n_steps > 0:
+                            for _ in range(n_steps):
+                                tokens.append(f"TIME_SHIFT_{TIME_RESOLUTION}")
+                                time_shifts += TIME_RESOLUTION
                     if msg.type == "note_on":
                         tokens.append(f"VELOCITY_{msg.velocity}")
                         tokens.append(f"TIME_{msg.time - time_shifts}")
@@ -42,6 +42,7 @@ class MidiEncoder:
                     elif msg.type == "control_change":
                         tokens.append(f"TIME_{msg.time - time_shifts}")
                         tokens.append(f"CONTROL_{round(msg.control / CONTROL_BINS_CONTROL_DISTANCE)}_{round(msg.value / CONTROL_BINS_VALUE_DISTANCE)}")
+                        time_shifts = 0
                     elif msg.type == "set_tempo":
                         tempo = msg.tempo
                         bpm = int(60000000 / tempo / TEMPO_BINS_DISTANCE)
@@ -50,7 +51,6 @@ class MidiEncoder:
                         pass
 
                 tokens.append("TRACK_END")
-            print(tokens)
             tokens.append("SONG_END")
             return self.converter.tokens_to_ids(tokens)
 
