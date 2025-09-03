@@ -1,6 +1,6 @@
 
 INPUT_PATH = "/datasets/piano_aria/data/aa"
-OUTPUT_PATH = "/output_samples"
+OUTPUT_PATH = "/output"
 
 # Music Parameters / Bins
 TIME_RESOLUTION = 100

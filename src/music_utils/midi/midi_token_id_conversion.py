@@ -53,3 +53,6 @@ class MidiTokenIDConversion:
 
     def ids_to_tokens(self, ids):
         return [self.id_to_token[i] for i in ids]
+    
+    def vocab_size(self):
+        return len(self.id_to_token)
