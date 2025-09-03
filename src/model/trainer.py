@@ -1,8 +1,9 @@
 import datetime
-from Pathlib import Path
+from pathlib import Path
 import jax
 from torch.utils.tensorboard import SummaryWriter
 from orbax.checkpoint import Checkpointer, ModelCheckpoint
+import optax
 
 
 class Trainer():
@@ -11,7 +12,7 @@ class Trainer():
         self.model = model
         self.dataloader = dataloader
         self.validation_dataloader = validation_dataloader
-        self.optimizer = optimizer
+        self.optimizer = optimizer  
         self.loss_fn = loss_fn
         
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -46,7 +47,7 @@ class Trainer():
         grads = jax.grad(loss_fn)(self.params)
         loss = loss_fn(self.params)
         updates, self.opt_state = self.optimizer.update(grads, self.opt_state, self.params)
-        self.params = jax.tree_util.tree_multimap(lambda p, u: p + u, self.params, updates)
+        self.params = optax.apply_updates(self.params, updates)
         return loss
 
     @jax.jit

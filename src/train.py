@@ -1,3 +1,4 @@
+import optax
 
 import jax
 import jax.numpy as jnp
@@ -22,8 +23,8 @@ def __main__():
         model=None,
         dataloader=train_dataloader,
         validation_dataloader=test_dataloader,
-        optimizer=None,
-        loss_fn=None,
+        optimizer=optax.adam(learning_rate=1e-3, b1=0.9, b2=0.999, eps=1e-8),
+        loss_fn=optax.mean_squared_error,
         log_dir=OUTPUT_PATH / "logs",
         ckpt_dir=OUTPUT_PATH / "checkpoints"
     )
