@@ -57,3 +57,6 @@ class MidiEncoder:
         except Exception as e:
             print(f"Error encoding MIDI: {e}")
             return []
+
+    def vocab_size(self):
+        return self.converter.vocab_size()

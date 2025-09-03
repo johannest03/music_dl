@@ -1,6 +1,5 @@
 
 
-from glob import glob
 import os
 from pathlib import Path
 import jax.numpy as jnp
@@ -11,16 +10,15 @@ from music_utils.midi.midi_encoder import MidiEncoder
 
 
 class PianoAriaDataloader:
-    def __init__(self, folder_path):
-        self.folder_path = folder_path
+    def __init__(self, files):
+        self.files = files
         self.encoder = MidiEncoder()
         
-        self.files = glob(os.path.join(self.folder_path, "**/*.mid"), recursive=True)
-        self.file_sizes = []
+        file_sizes = []
         for f in tqdm(self.files, "Grouping files..."):
-            self.file_sizes.append(os.path.getsize(f))
+            file_sizes.append(os.path.getsize(f))
 
-        self.files, self.file_sizes = zip(*sorted(zip(self.files, self.file_sizes), key=lambda x: x[1]))
+        self.files, _ = zip(*sorted(zip(self.files, file_sizes), key=lambda x: x[1]))
 
 
     def _pad(self, token_ids, length):
@@ -29,6 +27,9 @@ class PianoAriaDataloader:
         token_ids = jnp.array(token_ids, dtype=jnp.int32)
         padded = padded.at[:len(token_ids)].set(token_ids)
         return padded
+
+    def get_vocab_size(self):
+        return self.encoder.vocab_size()
 
     def load_data(self, batch_size=8, batch_shuffle=True, key=jax.random.PRNGKey(0)):
         """
@@ -39,7 +40,7 @@ class PianoAriaDataloader:
         start_idx = 0
         while start_idx < len(self.files):
             batch_files = self.files[start_idx:start_idx+batch_size]
-            
+
             batch_tokens = []
             for i in range(len(batch_files)):
                 batch_tokens.append(self.encoder.encode(midi_file_path=batch_files[i]))
