@@ -1,4 +1,4 @@
-from params import TIME_RESOLUTION, TEMPO_BINS_DISTANCE, TIME_BINS_DISTANCE, MAX_TEMPO, CONTROL_BINS_VALUE_DISTANCE, CONTROL_BINS_CONTROL_DISTANCE
+from params import CONTROL_MAX_CONTROL, CONTROL_MAX_VALUE, TIME_RESOLUTION, TEMPO_BINS_DISTANCE, TIME_BINS_DISTANCE, MAX_TEMPO, CONTROL_BINS_VALUE_DISTANCE, CONTROL_BINS_CONTROL_DISTANCE
 
 class MidiTokenIDConversion:
     def __init__(self):
@@ -27,8 +27,8 @@ class MidiTokenIDConversion:
             self._add_token(f"PROGRAM_{p}")
 
         # Control changes
-        for c in range(0, 128, CONTROL_BINS_CONTROL_DISTANCE):
-            for v in range(0, 128, CONTROL_BINS_VALUE_DISTANCE):
+        for c in range(0, CONTROL_MAX_CONTROL + 1, CONTROL_BINS_CONTROL_DISTANCE):
+            for v in range(0, CONTROL_MAX_VALUE + 1, CONTROL_BINS_VALUE_DISTANCE):
                 self._add_token(f"CONTROL_{c}_{v}")
 
         # Tempo bins
@@ -37,6 +37,9 @@ class MidiTokenIDConversion:
 
         # Time shift
         self._add_token(f"TIME_SHIFT_{TIME_RESOLUTION}")
+        
+        # Padding
+        self._add_token(f"PAD")
 
     def _add_token(self, token):
         self.token_to_id[token] = len(self.id_to_token)
@@ -46,7 +49,7 @@ class MidiTokenIDConversion:
         ids = [int(self.token_to_id[t]) for t in tokens if t in self.token_to_id]
 
         for t in tokens:
-            assert t not in self.token_to_id, f"Token '{t}' not recognized." 
+            assert t in self.token_to_id, f"Token '{t}' not recognized."
 
         assert len(ids) == len(tokens), "Some tokens were not recognized."
         return ids
@@ -56,3 +59,9 @@ class MidiTokenIDConversion:
     
     def vocab_size(self):
         return len(self.id_to_token)
+
+    def end_token_id(self):
+        return self.token_to_id["SONG_END"]
+
+    def pad_token_id(self):
+        return self.token_to_id["PAD"]

@@ -7,60 +7,45 @@ import jax
 from tqdm import tqdm
 
 from music_utils.midi.midi_encoder import MidiEncoder
+from music_utils.midi.midi_segmentation import MidiSegmentation
+from params import MAX_SEQUENCE_LENGTH
 
 
 class PianoAriaDataloader:
+    """
+    DataLoader for Piano Aria dataset.
+    """
     def __init__(self, files):
         self.files = files
         self.encoder = MidiEncoder()
-        
-        file_sizes = []
-        for f in tqdm(self.files, "Grouping files..."):
-            file_sizes.append(os.path.getsize(f))
+        self.segmenter = MidiSegmentation(max_sequence_length=MAX_SEQUENCE_LENGTH)
 
-        self.files, _ = zip(*sorted(zip(self.files, file_sizes), key=lambda x: x[1]))
+        self.segments = []
+        self.file_names = []
+        for f in tqdm(self.files, "Segmenting files..."):
+            token_ids = self.encoder.encode(midi_file_path=f)
+            segments = self.segmenter.segment(token_ids)
+            self.segments.extend(segments)
+            self.file_names.extend([Path(f).name] * len(segments))
 
-
-    def _pad(self, token_ids, length):
-        assert len(token_ids) <= length, "Token IDs length exceeds sequence length"
-        padded = jnp.zeros(length, dtype=jnp.int32)
-        token_ids = jnp.array(token_ids, dtype=jnp.int32)
-        padded = padded.at[:len(token_ids)].set(token_ids)
-        return padded
-
-    def get_vocab_size(self):
+    def vocab_size(self):
         return self.encoder.vocab_size()
+    
 
-    def load_data(self, batch_size=8, batch_shuffle=True, key=jax.random.PRNGKey(0)):
+    def load_data(self, batch_size=8, shuffle=True, key=jax.random.PRNGKey(0)):
         """
         Load data in batches. 
         Pads to max length in the batch. 
         Shuffles within the batch if specified.
         """
+        indices = jnp.arange(len(self.segments))
+        if shuffle:
+            indices = jax.random.permutation(key, indices)
+        indices = list(indices)
         start_idx = 0
-        while start_idx < len(self.files):
-            batch_files = self.files[start_idx:start_idx+batch_size]
-
-            batch_tokens = []
-            for i in range(len(batch_files)):
-                batch_tokens.append(self.encoder.encode(midi_file_path=batch_files[i]))
-
-            max_len = max([len(tokens) for tokens in batch_tokens])
-
-            file_names = []
-
-            for i, file in enumerate(batch_files):
-                # Pad to max length in this batch
-                padded = self._pad(batch_tokens[i], max_len)
-                batch_tokens[i] = padded
-                file_names.append(Path(file).name)
-
-            if batch_shuffle:
-                # Shuffle within the batch
-                perm = jnp.array(jax.random.permutation(key, len(batch_tokens)), dtype=jnp.int32)
-                batch_tokens = [batch_tokens[i] for i in perm]
-                file_names = [file_names[i] for i in perm]
-
-            yield jnp.array(batch_tokens, dtype=jnp.int32), file_names
-
+        while start_idx < len(self.segments):
+            batch_indices = indices[start_idx:start_idx+batch_size]
+            batch_tokens = [self.segments[i] for i in batch_indices]
+            batch_file_names = [self.file_names[i] for i in batch_indices]
+            yield jnp.array(batch_tokens, dtype=jnp.int32), batch_file_names
             start_idx += batch_size

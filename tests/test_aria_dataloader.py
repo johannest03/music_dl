@@ -1,7 +1,7 @@
 
 from music_utils.piano_aria.piano_aria_dataloader import PianoAriaDataloader
 from params import INPUT_PATH
-from music_utils.data_split_utils import split_files
+from music_utils.midi.data_split_utils import split_files
 
 
 def test_piano_aria_dataloader():

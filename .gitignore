@@ -1,5 +1,5 @@
 **/__pycache__
 **.tar
 **/datasets
-**/output_samples/
+**/output/
 **.pytest_cache

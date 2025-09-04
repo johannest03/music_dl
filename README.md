@@ -15,7 +15,7 @@ docker build -t music_dl_dev -f Dockerfile.dev .
 ```sh
 docker run --rm -it --gpus all `
   -v ${PWD}/src:/workspace `
-  -v ${PWD}/output_samples:/output_samples `
+  -v ${PWD}/output:/output `
   -v ${PWD}/datasets:/datasets `
   music_dl_dev
 ```
@@ -25,7 +25,7 @@ docker run --rm -it --gpus all `
 ```sh
 docker run --rm -it --gpus all `
   -v ${PWD}/src:/workspace/src `
-  -v ${PWD}/output_samples:/output_samples `
+  -v ${PWD}/output:/output `
   -v ${PWD}/datasets:/datasets `
   -v ${PWD}/tests:/workspace/tests `
   music_dl_dev `
@@ -44,6 +44,6 @@ docker build -t music_dl -f Dockerfile .
 
 ```sh
 docker run --rm -it --gpus all `
- -v ${PWD}/output_samples:/output_samples `
+ -v ${PWD}/output:/output `
 music_dl
 ```
