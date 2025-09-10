@@ -4,10 +4,11 @@ from params import MAX_SEQUENCE_LENGTH
 
 class Selenite(nn.Module):
     vocab_size: int
-    d_model: int = 128
-    d_ff: int = 512
-    n_heads: int = 4
-    n_layers: int = 2
+    d_model: int = 256
+    d_ff: int = 1024
+    n_heads: int = 8
+    n_layers: int = 6
+    dropout_rate: float = 0.1
     
     def setup(self):
         self.embedding = nn.Embed(self.vocab_size, self.d_model)
@@ -35,6 +36,9 @@ class Selenite(nn.Module):
         positions = jax.numpy.arange(seq_len)[None, :]  # shape (1, seq_len)
         pos_emb = self.pos_emb(positions)
         x = x + pos_emb
+
+        x = nn.Dropout(rate=self.dropout_rate)(x, rng=rng, deterministic=not train)
+
 
         # Transformer blocks
         for block in self.transformer_blocks:

@@ -54,6 +54,8 @@ class MidiDecoder:
                 control, value = map(int, token.split("_")[1:])
                 track.append(Message("control_change", control=control, value=value, time=delta_ticks))
                 delta_ticks = 0
+            elif token == "PAD":
+                continue
             else:
                 print(f"Unknown token: {token}")
 

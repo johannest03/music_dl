@@ -27,10 +27,10 @@ class PianoAriaDataloader:
             segments = self.segmenter.segment(token_ids)
             self.segments.extend(segments)
             self.file_names.extend([Path(f).name] * len(segments))
+        self.length = len(self.segments)
 
     def vocab_size(self):
         return self.encoder.vocab_size()
-    
 
     def load_data(self, batch_size=8, shuffle=True, key=jax.random.PRNGKey(0)):
         """

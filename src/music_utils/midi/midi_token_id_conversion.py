@@ -19,7 +19,7 @@ class MidiTokenIDConversion:
         for v in range(128):
             self._add_token(f"VELOCITY_{v}")
         
-        for t in range(0, TIME_RESOLUTION, TIME_BINS_DISTANCE):
+        for t in range(0, TIME_RESOLUTION + 1, TIME_BINS_DISTANCE):
             self._add_token(f"TIME_{t}")
 
         # Program changes
@@ -65,3 +65,13 @@ class MidiTokenIDConversion:
 
     def pad_token_id(self):
         return self.token_to_id["PAD"]
+    
+    def start_token_id(self):
+        return self.token_to_id["SONG_START"]
+    
+    def track_start_token_id(self):
+        return self.token_to_id["TRACK_START"]
+    
+    
+    def get_note_ids(self):
+        return [self.token_to_id[f"NOTE_ON_{n}"] for n in range(128)] + [self.token_to_id[f"NOTE_OFF_{n}"] for n in range(128)]

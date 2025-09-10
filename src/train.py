@@ -25,7 +25,7 @@ def __main__():
         d_model=128,
         d_ff=512,
         n_heads=4,
-        n_layers=2
+        n_layers=6
     )
     
 
@@ -35,7 +35,7 @@ def __main__():
         validation_dataloader=test_dataloader,
         optimizer=optax.adam(learning_rate=1e-3, b1=0.9, b2=0.999, eps=1e-8),
         loss_fn= lambda logits, targets: jnp.mean(optax.softmax_cross_entropy_with_integer_labels(logits, targets)),
-        sample_path=OUTPUT_PATH + "/samples",
+        sample_dir=OUTPUT_PATH + "/samples",
         log_dir=OUTPUT_PATH + "/logs",
         ckpt_dir=OUTPUT_PATH + "/checkpoints"
     )

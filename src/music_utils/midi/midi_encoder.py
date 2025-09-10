@@ -40,7 +40,7 @@ class MidiEncoder:
                     elif msg.type == "program_change":
                         tokens.append(f"PROGRAM_{msg.program}")
                     elif msg.type == "control_change":
-                        tokens.append(f"TIME_{(msg.time - time_shifts)}")
+                        tokens.append(f"TIME_{int(round((msg.time - time_shifts) / TIME_BINS_DISTANCE) * TIME_BINS_DISTANCE)}")
                         tokens.append(f"CONTROL_{int(round(msg.control / CONTROL_BINS_CONTROL_DISTANCE) * CONTROL_BINS_CONTROL_DISTANCE)}_{int(round(msg.value / CONTROL_BINS_VALUE_DISTANCE) * CONTROL_BINS_VALUE_DISTANCE )}")
                         time_shifts = 0
                     elif msg.type == "set_tempo":

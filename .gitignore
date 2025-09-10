@@ -3,3 +3,4 @@
 **/datasets
 **/output/
 **.pytest_cache
+**/local_utils/

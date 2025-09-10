@@ -1,12 +1,12 @@
 
-INPUT_PATH = "/datasets/piano_aria/data/aa"
-OUTPUT_PATH = "/output"
+INPUT_PATH = "/datasets/piano_aria/data/aa" # Specifiy your input data path here, works recursively to all subfolders
+OUTPUT_PATH = "/output" # folder to save checkpoints, samples, logs, etc.
 
 # Music Parameters / Bins
-MAX_SEQUENCE_LENGTH = 2000 # will use this length to segment the input data
+MAX_SEQUENCE_LENGTH = 1024 # will use this length to segment the input data
 
-TIME_RESOLUTION = 100
-TIME_BINS_DISTANCE = 10 # used for timing binning
+TIME_RESOLUTION = 300
+TIME_BINS_DISTANCE = 100 # used for timing binning
 
 MAX_TEMPO = 300 # in bpm
 TEMPO_BINS_DISTANCE = 4 # used for tempo binning
