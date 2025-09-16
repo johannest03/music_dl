@@ -27,7 +27,7 @@ class MidiTokenIDConversion:
             self._add_token(f"PROGRAM_{p}")
 
         # Control changes
-        for c in range(0, CONTROL_MAX_CONTROL + 1, CONTROL_BINS_CONTROL_DISTANCE):
+        for c in range(0, CONTROL_MAX_CONTROL, CONTROL_BINS_CONTROL_DISTANCE):
             for v in range(0, CONTROL_MAX_VALUE + 1, CONTROL_BINS_VALUE_DISTANCE):
                 self._add_token(f"CONTROL_{c}_{v}")
 

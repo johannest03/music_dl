@@ -21,11 +21,7 @@ def __main__():
     test_dataloader = PianoAriaDataloader(files=test_files)
 
     model = Selenite(
-        vocab_size=train_dataloader.vocab_size(),
-        d_model=128,
-        d_ff=512,
-        n_heads=4,
-        n_layers=6
+        vocab_size=train_dataloader.vocab_size()
     )
     
 
@@ -41,7 +37,7 @@ def __main__():
     )
     trainer.compile(rng=jax.random.PRNGKey(0), input_shape=(1, MAX_SEQUENCE_LENGTH))
 
-    trainer.train(epochs=20, batch_size=8)
+    trainer.train(epochs=20, batch_size=32)
 
 if __name__ == "__main__":
     __main__()
