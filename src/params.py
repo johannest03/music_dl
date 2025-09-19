@@ -1,18 +1,25 @@
+from miditok import TokenizerConfig
 
-INPUT_PATH = "/datasets/piano_aria/data/a_medium" # Specifiy your input data path here, works recursively to all subfolders
+INPUT_PATH = "/datasets/piano_aria/data/a_medium/aa" # Specifiy your input data path here, works recursively to all subfolders
 OUTPUT_PATH = "/output" # folder to save checkpoints, samples, logs, etc.
 
-# Music Parameters / Bins
-MAX_SEQUENCE_LENGTH = 512 # will use this length to segment the input data
+# Music params
+MAX_SEQUENCE_LENGTH = 512
 
-TIME_RESOLUTION = 300
-TIME_BINS_DISTANCE = 100 # used for timing binning
-
-MAX_TEMPO = 300 # in bpm
-TEMPO_BINS_DISTANCE = 4 # used for tempo binning
-
-CONTROL_MAX_CONTROL = 64
-CONTROL_BINS_CONTROL_DISTANCE = 8 # used for control change binning
-
-CONTROL_MAX_VALUE = 128
-CONTROL_BINS_VALUE_DISTANCE = 8 # used for control change binning
+# Tokenizer Config
+vocab_size = 500
+tokenizer_config = TokenizerConfig(
+    pitch_range=(21, 109),
+    beat_res={(0, 4): 8, (4, 12): 4},
+    num_velocities=32,
+    special_tokens=["PAD", "BOS", "EOS",],
+    use_chords=True,
+    use_rests=True,
+    use_tempos=True,
+    use_time_signatures=True,
+    use_programs=False,
+    num_tempos=32,
+    tempo_range=(40, 250),
+    vocab_size=vocab_size,
+    one_token_stream_for_programs=False
+)
