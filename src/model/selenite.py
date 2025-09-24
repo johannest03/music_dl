@@ -108,38 +108,25 @@ class RoPEAttention(nn.Module):
     def __call__(self, x, rng, mask=None, deterministic=False):
         b, seq_len, _ = x.shape
         qkv = self.qkv(x)
-        qkv = jnp.clip(qkv, -1e4, 1e4)  # Clip after dense projection
         qkv = qkv.reshape(b, seq_len, self.num_heads, 3 * self.head_dim)
         q, k, v = jnp.split(qkv, 3, axis=-1)
         q = jnp.swapaxes(q, 1, 2)  # (b, num_heads, seq_len, head_dim)
         k = jnp.swapaxes(k, 1, 2)  # (b, num_heads, seq_len, head_dim)
         v = jnp.swapaxes(v, 1, 2)  # (b, num_heads, seq_len, head_dim)
         
-        # Clip q, k, v early
-        q = jnp.clip(q, -1e4, 1e4)
-        k = jnp.clip(k, -1e4, 1e4)
-        v = jnp.clip(v, -1e4, 1e4)
-        
         # Apply rotary to q, k
         cos = self.cos.value[:seq_len]  # (seq_len, dim/2)
         sin = self.sin.value[:seq_len]  # (seq_len, dim/2)
         q, k = self._apply_rotary_pos_emb(q, k, cos, sin)
         
-        # Clip after rotary (prevents amplification)
-        q = jnp.clip(q, -1e4, 1e4)
-        k = jnp.clip(k, -1e4, 1e4)
-        
         att_weights = jnp.einsum('bhqd,bhkd->bhqk', q, k) / jnp.sqrt(self.head_dim)
         if mask is not None:
             att_weights = jnp.where(mask > 0, att_weights, -1e10)
-        att_weights = jnp.clip(att_weights, -1e4, 1e4)  # Reinforce
         attn_scores = nn.softmax(att_weights, axis=-1)
         attn_scores = self.dropout(attn_scores, rng=rng, deterministic=deterministic)
         out = jnp.einsum('bhqk,bhkd->bhqd', attn_scores, v)
-        out = jnp.clip(out, -1e4, 1e4)  # Clip attention output
         out = jnp.swapaxes(out, 1, 2).reshape(b, seq_len, -1)
         out = self.out(out)
-        out = jnp.clip(out, -1e4, 1e4)  # Clip final output
         return out
     
     def _rope_freqs(self, dim: int, max_seq_len: int, base: float = 10000.0):

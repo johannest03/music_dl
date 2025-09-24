@@ -111,8 +111,9 @@ class Trainer():
                 val_loss /= self.validation_dataloader.length // batch_size
                 val_accuracy /= self.validation_dataloader.length // batch_size
                 val_perplexity /= self.validation_dataloader.length // batch_size
+                print(f"Validation Loss: {val_loss}, Accuracy: {val_accuracy}, Perplexity: {val_perplexity}")
                 self.writer.add_scalar('Loss/val', float(val_loss), epoch)
-                self.writer.add_scalar('Accuracy/val', float(val_accuracy), epoch)
+                self.writer.add_scalar('Acc/val', float(val_accuracy), epoch)
                 self.writer.add_scalar('Perplexity/val', float(val_perplexity), epoch)
 
             # Save checkpoints periodically
@@ -123,7 +124,7 @@ class Trainer():
             # Use a fixed start token or random input from the batch for generation
             if self.tokenizer:
                 try:
-                    start_token = jax.numpy.array([self.tokenizer["BOS"]], dtype=jax.numpy.int32)
+                    start_token = jax.numpy.array([1], dtype=jax.numpy.int32) # 1 is BOS token
                     sample = self._generate_sample(start_token, rng=rng)
                     midi_score = self.tokenizer.decode(sample)
                     sample_path = self.sample_dir / f"sample_epoch_{epoch}.mid"
@@ -156,6 +157,6 @@ class Trainer():
             next_token = top_k_indices[0, next_token_idx]
             seq = seq.at[0, i].set(next_token)
             tokens.append(int(next_token))
-        tokens.append(self.tokenizer["EOS"])
+        tokens.append(2)  # EOS token
         print(tokens)  
         return tokens

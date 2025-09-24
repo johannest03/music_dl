@@ -8,7 +8,6 @@ from model.trainer import Trainer
 from music_utils.midi.data_split_utils import split_files
 
 def loss_fn(logits, targets, pad_token_id):
-    logits = jnp.clip(logits, -1e4, 1e4)
     mask = targets != pad_token_id
     loss = optax.softmax_cross_entropy_with_integer_labels(logits, targets)
     loss = loss * mask
@@ -33,7 +32,7 @@ def __main__():
         model=model,
         dataloader=train_dataloader,
         validation_dataloader=test_dataloader,
-        optimizer=optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate=1e-5)),  # Added clipping and lowered LR
+        optimizer=optax.chain(optax.clip_by_global_norm(1.0), optax.adam(learning_rate=1e-4)), 
         loss_fn=lambda logits, targets: loss_fn(logits, targets, pad_token_id=train_dataloader.tokenizer.pad_token_id),
         sample_dir=OUTPUT_PATH + "/samples",
         log_dir=OUTPUT_PATH + "/logs",
