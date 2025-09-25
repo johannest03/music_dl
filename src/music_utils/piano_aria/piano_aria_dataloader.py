@@ -9,7 +9,7 @@ from tqdm import tqdm
 from music_utils.midi.midi_segmentation import MidiSegmentation
 from params import MAX_SEQUENCE_LENGTH, tokenizer_config, vocab_size
 from symusic import Score
-from miditok import REMI
+from miditok import MMM
 class PianoAriaDataloader:
     """
     DataLoader for Piano Aria dataset.
@@ -18,7 +18,7 @@ class PianoAriaDataloader:
         self.files = files
         
         if not Path("tokenizer.json").exists():
-            self.tokenizer = REMI(
+            self.tokenizer = MMM(
                 tokenizer_config=tokenizer_config
             )
             print("Training tokenizer...")
@@ -26,26 +26,18 @@ class PianoAriaDataloader:
             self.tokenizer.train(vocab_size=vocab_size, files_paths=midi_paths)
             self.tokenizer.save("tokenizer.json")
         else:
-            self.tokenizer = REMI(tokenizer_config=tokenizer_config, params="tokenizer.json")
+            self.tokenizer = MMM(tokenizer_config=tokenizer_config, params="tokenizer.json")
 
         self.segmenter = MidiSegmentation(max_sequence_length=MAX_SEQUENCE_LENGTH, pad_token_id=self.tokenizer.pad_token_id)
         self.segments = []
         self.file_names = []
         for f in tqdm(self.files, "Segmenting files..."):
             midi_file = Score(f)
-            token_ids = self.tokenizer(midi_file)
-            # Handle MidiTokSequence or other non-list returns
-            if not isinstance(token_ids, list):
-                token_ids = token_ids.ids
-            # Flatten recursively if nested (e.g., multi-track or deeper nesting)
-            while isinstance(token_ids, list) and len(token_ids) > 0 and isinstance(token_ids[0], list):
-                token_ids = [item for sublist in token_ids for item in sublist]
-            # Handle list of MidiTokSequence
-            if isinstance(token_ids, list) and len(token_ids) > 0 and hasattr(token_ids[0], 'ids'):
-                token_ids = [item for sublist in token_ids for item in sublist.ids]
-            segments = self.segmenter.segment(token_ids)
+            token_sequences = self.tokenizer(midi_file) 
+            segments = self.segmenter.segment(token_sequences.ids)
             self.segments.extend(segments)
             self.file_names.extend([Path(f).name] * len(segments))
+          
         assert len(self.segments) == len(self.file_names), "Segments and file names length mismatch"
         assert len(self.segments) >= len(self.files), "Less segments created from files"
         self.length = len(self.segments)
