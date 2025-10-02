@@ -120,11 +120,11 @@ class Trainer():
                 self.checkpointer.save(self.ckpt_dir / f"epoch_{epoch}", self.params)
 
             # Generate a sample for each epoch
-            # Use a fixed start token or random input from the batch for generation
+            # Use a fixed start token and random input from the batch for generation
             if self.dataloader.tokenizer is not None:
                 try:
                     start_tokens = self.dataloader.segments[0][:50] # 1 is BOS token
-                    track_sample = self._generate_sample(start_tokens, rng, max_length=512)
+                    track_sample = self._generate_sample(start_tokens, rng, max_length=200)
                     midi_score = self.dataloader.tokenizer.decode(track_sample)
                     sample_path = self.sample_dir / f"sample_epoch_{epoch}_continuation.mid"
                     midi_score.dump_midi(str(sample_path))
@@ -163,6 +163,4 @@ class Trainer():
             tokens.append(int(next_token))
             if int(next_token) == 2:  # EOS token, stop here
                 break
-        #tokens.append(2)  # EOS token
-        print(tokens)  
         return tokens

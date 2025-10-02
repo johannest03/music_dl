@@ -1,6 +1,6 @@
 from miditok import TokenizerConfig
 
-INPUT_PATH = "/datasets/piano_aria/data/a_medium/aa" # Specifiy your input data path here, works recursively to all subfolders
+INPUT_PATH = "/datasets/piano_aria/data/a_medium/" # Specifiy your input data path here, works recursively to all subfolders
 OUTPUT_PATH = "/output" # folder to save checkpoints, samples, logs, etc.
 
 # Music params
