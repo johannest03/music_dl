@@ -1,66 +1,73 @@
-
-
 import os
 from pathlib import Path
 import jax.numpy as jnp
 import jax
 from tqdm import tqdm
 
-from music_utils.midi.midi_encoder import MidiEncoder
-
+from music_utils.midi.midi_segmentation import MidiSegmentation
+from params import MAX_SEQUENCE_LENGTH, tokenizer_config, vocab_size
+from symusic import Score
+from miditok import MMM
 
 class PianoAriaDataloader:
+    """
+    DataLoader for Piano Aria dataset.
+    Loads data lazily to avoid memory issues.
+    """
     def __init__(self, files):
         self.files = files
-        self.encoder = MidiEncoder()
         
-        file_sizes = []
-        for f in tqdm(self.files, "Grouping files..."):
-            file_sizes.append(os.path.getsize(f))
+        if not Path("tokenizer.json").exists():
+            self.tokenizer = MMM(
+                tokenizer_config=tokenizer_config
+            )
+            print("Training tokenizer...")
+            midi_paths = [str(Path(f).resolve()) for f in self.files] 
+            self.tokenizer.train(vocab_size=vocab_size, files_paths=midi_paths)
+            self.tokenizer.save("tokenizer.json")
+        else:
+            self.tokenizer = MMM(tokenizer_config=tokenizer_config, params="tokenizer.json")
 
-        self.files, _ = zip(*sorted(zip(self.files, file_sizes), key=lambda x: x[1]))
+        self.segmenter = MidiSegmentation(max_sequence_length=MAX_SEQUENCE_LENGTH, pad_token_id=self.tokenizer.pad_token_id)
+        
+        # Pre-count segments per file without storing data
+        self.segment_refs = []  # List of (file_idx, seg_idx) tuples for all segments
+        for f_idx, f in tqdm(enumerate(self.files), "Counting segments..."):
+            midi_file = Score(f)
+            token_sequences = self.tokenizer(midi_file)
 
+            segments_nrs = self.segmenter.count_segments(token_sequences.ids)
 
-    def _pad(self, token_ids, length):
-        assert len(token_ids) <= length, "Token IDs length exceeds sequence length"
-        padded = jnp.zeros(length, dtype=jnp.int32)
-        token_ids = jnp.array(token_ids, dtype=jnp.int32)
-        padded = padded.at[:len(token_ids)].set(token_ids)
-        return padded
+            for s_idx in range(segments_nrs):
+                self.segment_refs.append((f_idx, s_idx))
+        
+        self.length = len(self.segment_refs)
+        assert self.length >= len(self.files), "Less segments created from files"
+    
+    def vocab_size(self):
+        return len(self.tokenizer.vocab)
 
-    def get_vocab_size(self):
-        return self.encoder.vocab_size()
-
-    def load_data(self, batch_size=8, batch_shuffle=True, key=jax.random.PRNGKey(0)):
+    def load_data(self, batch_size=32, shuffle=True, key=jax.random.PRNGKey(0)):
         """
-        Load data in batches. 
-        Pads to max length in the batch. 
-        Shuffles within the batch if specified.
+        Load data in batches lazily.
+        Pads to max length in the batch.
+        Shuffles at segment level if specified.
         """
+        indices = jnp.arange(self.length)
+        if shuffle:
+            indices = jax.random.permutation(key, indices)
+        indices = list(indices)
         start_idx = 0
-        while start_idx < len(self.files):
-            batch_files = self.files[start_idx:start_idx+batch_size]
-
-            batch_tokens = []
-            for i in range(len(batch_files)):
-                batch_tokens.append(self.encoder.encode(midi_file_path=batch_files[i]))
-
-            max_len = max([len(tokens) for tokens in batch_tokens])
-
-            file_names = []
-
-            for i, file in enumerate(batch_files):
-                # Pad to max length in this batch
-                padded = self._pad(batch_tokens[i], max_len)
-                batch_tokens[i] = padded
-                file_names.append(Path(file).name)
-
-            if batch_shuffle:
-                # Shuffle within the batch
-                perm = jnp.array(jax.random.permutation(key, len(batch_tokens)), dtype=jnp.int32)
-                batch_tokens = [batch_tokens[i] for i in perm]
-                file_names = [file_names[i] for i in perm]
-
-            yield jnp.array(batch_tokens, dtype=jnp.int32), file_names
-
+        while start_idx < self.length:
+            batch_indices = indices[start_idx:start_idx+batch_size]
+            batch_segments = []
+            batch_file_names = []
+            for idx in batch_indices:
+                f_idx, s_idx = self.segment_refs[idx]
+                midi_file = Score(self.files[f_idx])
+                token_sequences = self.tokenizer(midi_file)
+                segments = self.segmenter.segment(token_sequences.ids)
+                batch_segments.append(segments[s_idx])
+                batch_file_names.append(Path(self.files[f_idx]).name)
+            yield jnp.array(batch_segments, dtype=jnp.int32), batch_file_names
             start_idx += batch_size
