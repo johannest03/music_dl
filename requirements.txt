@@ -6,3 +6,5 @@ pytest
 tqdm
 torch
 tensorboard
+miditok 
+symusic

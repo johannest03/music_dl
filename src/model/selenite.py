@@ -5,12 +5,13 @@ import jax.numpy as jnp
 
 class Selenite(nn.Module):
     vocab_size: int
+    pad_token_id: int
     d_model: int = 256
     d_ff: int = 1024
     n_heads: int = 8
     n_layers: int = 10
     dropout_rate: float = 0.2
-    
+
     def setup(self):
         self.embedding = nn.Embed(self.vocab_size, self.d_model)
         self.dropout = nn.Dropout(rate=self.dropout_rate)
@@ -24,24 +25,26 @@ class Selenite(nn.Module):
             ) for _ in range(self.n_layers)
         ]
         self.layernorm = nn.LayerNorm()
-        self.projection = lambda x: x @ self.embedding.embedding.T # tie weights with input embedding
+        self.projection = lambda x: x @ self.embedding.embedding.T
 
     @nn.compact
     def __call__(self, x, rng=None, train=True):
-        
+        # x is token IDs: (b, seq_len)
+        padding_mask = (x != self.pad_token_id).astype(jnp.float32)  # (b, seq_len)
+
         # Input embedding
         x = self.embedding(x)
+
         x = self.dropout(x, rng=rng, deterministic=not train)
-        
         # Transformer blocks
         for block in self.transformer_blocks:
-            x = block(x, rng, train=train)
+            x = block(x, rng, train=train, padding_mask=padding_mask)
 
         # Output projection
-        logits = self.projection(self.layernorm(x))
+        x = self.layernorm(x)
+        logits = self.projection(x)
         return logits
-    
-    
+
 class TransformerRoPEBlock(nn.Module):
     d_model: int
     n_heads: int
@@ -57,20 +60,24 @@ class TransformerRoPEBlock(nn.Module):
         )
         
         self.mlp = SwiGLU(d_ff=self.d_ff, d_model=self.d_model)
-
         self.layernorm1 = nn.LayerNorm()
         self.layernorm2 = nn.LayerNorm()
         self.dropout = nn.Dropout(rate=self.dropout_rate)
-        
+
     @nn.compact
-    def __call__(self, x, rng, train=True):
+    def __call__(self, x, rng, train=True, padding_mask=None):
         seq_len = x.shape[1]
-        # Create causal mask: upper triangle is -inf (prevents attending to future)
-        causal_mask = jax.numpy.tril(jax.numpy.ones((seq_len, seq_len)))
-        causal_mask = causal_mask[None, None, :, :]  # Shape for attention: (1, 1, seq_len, seq_len)
-    
+        # Create causal mask
+        causal_mask = jnp.tril(jnp.ones((seq_len, seq_len)))
+        # Create combined mask: causal AND padding
+        if padding_mask is not None:
+            combined_mask = causal_mask * padding_mask[:, None, :] * padding_mask[:, :, None]  # (b, seq_len, seq_len)
+        else:
+            combined_mask = causal_mask  # (seq_len, seq_len), will broadcast
+        combined_mask = combined_mask[:, None, :, :]  # (b, 1, seq_len, seq_len) for attention
+
         # Self-attention block
-        attn_output = self.attention(self.layernorm1(x), rng=rng, mask=causal_mask, deterministic=not train)
+        attn_output = self.attention(self.layernorm1(x), rng=rng, mask=combined_mask, deterministic=not train)
         attn_output = self.dropout(attn_output, rng=rng, deterministic=not train)
         x = x + attn_output
 
@@ -104,14 +111,14 @@ class RoPEAttention(nn.Module):
         qkv = qkv.reshape(b, seq_len, self.num_heads, 3 * self.head_dim)
         q, k, v = jnp.split(qkv, 3, axis=-1)
         q = jnp.swapaxes(q, 1, 2)  # (b, num_heads, seq_len, head_dim)
-        k = jnp.swapaxes(k, 1, 2)  # (b
+        k = jnp.swapaxes(k, 1, 2)  # (b, num_heads, seq_len, head_dim)
         v = jnp.swapaxes(v, 1, 2)  # (b, num_heads, seq_len, head_dim)
         
-        # apply rotary to q, k
+        # Apply rotary to q, k
         cos = self.cos.value[:seq_len]  # (seq_len, dim/2)
         sin = self.sin.value[:seq_len]  # (seq_len, dim/2)
         q, k = self._apply_rotary_pos_emb(q, k, cos, sin)
-
+        
         att_weights = jnp.einsum('bhqd,bhkd->bhqk', q, k) / jnp.sqrt(self.head_dim)
         if mask is not None:
             att_weights = jnp.where(mask > 0, att_weights, -1e10)
