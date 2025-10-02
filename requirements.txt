@@ -3,3 +3,8 @@ flax
 optax 
 mido
 pytest
+tqdm
+torch
+tensorboard
+miditok 
+symusic
