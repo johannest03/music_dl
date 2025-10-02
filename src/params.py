@@ -1,13 +1,13 @@
 from miditok import TokenizerConfig
 
-INPUT_PATH = "/datasets/piano_aria/data/a_medium/aa" # Specifiy your input data path here, works recursively to all subfolders
+INPUT_PATH = "/datasets/piano_aria/data/a_medium/" # Specifiy your input data path here, works recursively to all subfolders
 OUTPUT_PATH = "/output" # folder to save checkpoints, samples, logs, etc.
 
 # Music params
 MAX_SEQUENCE_LENGTH = 512
 
 # Tokenizer Config
-vocab_size = 500
+vocab_size = 600
 tokenizer_config = TokenizerConfig(
     pitch_range=(21, 109),
     beat_res={(0, 4): 8, (4, 12): 4},
@@ -17,9 +17,9 @@ tokenizer_config = TokenizerConfig(
     use_rests=True,
     use_tempos=True,
     use_time_signatures=True,
-    use_programs=False,
+    use_programs=True,
     num_tempos=32,
     tempo_range=(40, 250),
     vocab_size=vocab_size,
-    one_token_stream_for_programs=False
+    base_tokenizer='REMI'
 )

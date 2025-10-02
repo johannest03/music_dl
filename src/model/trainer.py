@@ -18,7 +18,6 @@ class Trainer():
         self.validation_dataloader = validation_dataloader
         self.optimizer = optimizer  
         self.loss_fn = loss_fn
-        self.tokenizer = dataloader.tokenizer 
         
         if timestamp is None:
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -121,17 +120,22 @@ class Trainer():
                 self.checkpointer.save(self.ckpt_dir / f"epoch_{epoch}", self.params)
 
             # Generate a sample for each epoch
-            # Use a fixed start token or random input from the batch for generation
-            if self.tokenizer:
+            # Use a fixed start token and random input from the batch for generation
+            if self.dataloader.tokenizer is not None:
                 try:
-                    start_token = jax.numpy.array([1], dtype=jax.numpy.int32) # 1 is BOS token
-                    sample = self._generate_sample(start_token, rng=rng)
-                    midi_score = self.tokenizer.decode(sample)
-                    sample_path = self.sample_dir / f"sample_epoch_{epoch}.mid"
-                    midi_score.dump(str(sample_path))
-                    print(f"Sample generated at epoch {epoch}: {sample_path}")
+                    start_tokens = self.dataloader.segments[0][:50] # 1 is BOS token
+                    track_sample = self._generate_sample(start_tokens, rng, max_length=200)
+                    midi_score = self.dataloader.tokenizer.decode(track_sample)
+                    sample_path = self.sample_dir / f"sample_epoch_{epoch}_continuation.mid"
+                    midi_score.dump_midi(str(sample_path))
+                    
+                    start_tokens = [1] # 1 is BOS token
+                    track_sample = self._generate_sample(start_tokens, rng , max_length=200)
+                    track_score = self.dataloader.tokenizer.decode(track_sample)
+                    sample_path = self.sample_dir / f"sample_epoch_{epoch}_bos.mid"
+                    track_score.dump_midi(str(sample_path))
                 except Exception as e:
-                    print(f"Sample generation failed at epoch {epoch}: {e}")
+                   print(f"Sample generation failed at epoch {epoch}: {e}")
                     
     def _compute_perplexity(self, logits, targets):
         log_probs = jax.nn.log_softmax(logits, axis=-1)
@@ -141,10 +145,10 @@ class Trainer():
 
     def _generate_sample(self, input_seq, rng, max_length=200, temperature=1.0, top_k=50):
         tokens = list(input_seq)
-        seq = jax.numpy.full((1, max_length), fill_value=self.tokenizer.pad_token_id, dtype=jax.numpy.int32)  
-        seq = seq.at[0, :len(tokens)].set(jax.numpy.array(tokens, dtype=jax.numpy.int32))
+        seq = jax.numpy.full((1, max_length), fill_value=self.dataloader.tokenizer.pad_token_id, dtype=jax.numpy.int32)
+        seq = seq.at[:, :len(tokens)].set(jax.numpy.array(tokens, dtype=jax.numpy.int32))
         cur_len = len(tokens)
-        pad_id = self.tokenizer.pad_token_id
+        pad_id = self.dataloader.tokenizer.pad_token_id
         for i in tqdm(range(cur_len, max_length), "Generating sample..."):
             logits = self.model.apply(self.params, seq, rng=rng)
             # Apply temperature and top-k, exclude PAD
@@ -157,6 +161,6 @@ class Trainer():
             next_token = top_k_indices[0, next_token_idx]
             seq = seq.at[0, i].set(next_token)
             tokens.append(int(next_token))
-        tokens.append(2)  # EOS token
-        print(tokens)  
+            if int(next_token) == 2:  # EOS token, stop here
+                break
         return tokens

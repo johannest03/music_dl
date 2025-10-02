@@ -40,7 +40,7 @@ def __main__():
     )
     trainer.compile(rng=jax.random.PRNGKey(0), input_shape=(1, MAX_SEQUENCE_LENGTH))
 
-    trainer.train(epochs=100, batch_size=32)
+    trainer.train(epochs=200, batch_size=32)
 
 if __name__ == "__main__":
     __main__()

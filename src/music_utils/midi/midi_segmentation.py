@@ -13,3 +13,6 @@ class MidiSegmentation:
                 chunk += [self.pad_token_id] * (self.max_sequence_length - len(chunk))
             segments.append(chunk)
         return segments
+    
+    def count_segments(self, token_ids):
+        return (len(token_ids) + (self.max_sequence_length - 2)) // (self.max_sequence_length - 1)
